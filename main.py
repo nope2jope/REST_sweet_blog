@@ -44,7 +44,6 @@ class CreatePostForm(FlaskForm):
 # posts = db.session.query(BlogPost).all()
 
 
-
 @app.route('/')
 def get_all_posts():
     posts = db.session.query(BlogPost).all()
@@ -66,9 +65,9 @@ def about():
 def contact():
     return render_template("contact.html")
 
+
 @app.route("/make-post", methods=['GET', 'POST'])
 def create_post():
-
     if request.method == 'GET':
         post_field = CreatePostForm()
         return render_template("make-post.html", form=post_field)
@@ -78,7 +77,7 @@ def create_post():
         new_post = BlogPost(
             title=request.form.get('title'),
             subtitle=request.form.get('subtitle'),
-            #generates date automatically
+            # generates date automatically
             date=date.today().strftime("%B %d, %Y"),
             body=request.form.get('body'),
             author=request.form.get('author'),
@@ -91,8 +90,44 @@ def create_post():
         return redirect(url_for('get_all_posts'))
 
 
+@app.route("/edit-post/<int:index>", methods=['GET', 'POST'])
+def edit_post(index):
+    post_to_edit = BlogPost.query.get(index)
+
+    if request.method == 'GET':
+        # editing variable changes h1 in make-post.html
+        editing = True
+        # form is prefilled with post's information
+        filled_form = CreatePostForm(
+            title=post_to_edit.title,
+            subtitle=post_to_edit.subtitle,
+            body=post_to_edit.body,
+            author=post_to_edit.author,
+            img_url=post_to_edit.img_url,
+        )
+        return render_template("make-post.html", form=filled_form, edit=editing)
+
+    elif request.method == 'POST':
+        post_to_edit.title = request.form.get('title')
+        post_to_edit.subtitle = request.form.get('subtitle')
+        post_to_edit.body = request.form.get('body')
+        post_to_edit.author = request.form.get('author')
+        post_to_edit.img_url = request.form.get('img_url')
+
+        db.session.commit()
+
+        return redirect(url_for('get_all_posts'))
+
+@app.route('/delete/<int:index>')
+def delete_post(index):
+    post_to_delete = BlogPost.query.get(index)
+
+    if post_to_delete:
+        db.session.delete(post_to_delete)
+        db.session.commit()
+
+    return redirect(url_for('get_all_posts'))
+
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', debug=True, port=5000)
-
-# {{url_for('edit_post', post_id=post.id)}}
